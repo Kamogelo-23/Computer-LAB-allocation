@@ -52,7 +52,7 @@ app.get('/api/admin/users', async (_req, res, next) => {
 
 app.post('/api/admin/users', async (req, res, next) => {
   try {
-    const { name, email, role, password } = req.body ?? {}
+    const { name, email, role, password, courses } = req.body ?? {}
 
     if (!name || !email || !role || !password) {
       return res.status(400).json({ error: 'Missing required fields: name, email, role, password' })
@@ -66,7 +66,7 @@ app.post('/api/admin/users', async (req, res, next) => {
       return res.status(400).json({ error: 'Staff accounts must use @tut.ac.za domain' })
     }
 
-    const result = await createUser({ name, email: email.toLowerCase(), role, password })
+    const result = await createUser({ name, email: email.toLowerCase(), role, password, courses })
     if (!result.success) {
       return res.status(400).json({ error: result.error })
     }
@@ -80,7 +80,7 @@ app.post('/api/admin/users', async (req, res, next) => {
 app.put('/api/admin/users/:id', async (req, res, next) => {
   try {
     const { id } = req.params
-    const { name, email, role, password, isVerified } = req.body ?? {}
+    const { name, email, role, password, isVerified, courses } = req.body ?? {}
 
     if (!id) {
       return res.status(400).json({ error: 'User id is required' })
@@ -100,7 +100,7 @@ app.put('/api/admin/users/:id', async (req, res, next) => {
       }
     }
 
-    const result = await updateUserById(id, { name, email: nextEmail, role, password, isVerified })
+    const result = await updateUserById(id, { name, email: nextEmail, role, password, isVerified, courses })
     if (!result.success) {
       return res.status(400).json({ error: result.error })
     }

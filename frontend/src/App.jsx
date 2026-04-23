@@ -1287,7 +1287,8 @@ function VenuesTab({ db, setDb, toast }) {
 
 // ─── Users Tab ────────────────────────────────────────────────────────────────
 function UsersTab({ db, setDb, toast }) {
-  const [form, setForm] = useState({ name: "", email: "", role: "Scheduler", password: "demo" });
+  const emptyForm = { name: "", email: "", role: "Scheduler", password: "", courses: [] };
+  const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
   const roleOptions = editingId ? ["Admin", "Scheduler", "Lecturer", "Student"] : ["Admin", "Scheduler", "Lecturer"];
@@ -1303,6 +1304,7 @@ function UsersTab({ db, setDb, toast }) {
 
   const save = async () => {
     if (!form.name || !form.email || !form.role) { toast("Fill all fields.", "error"); return; }
+    if (!editingId && !form.password) { toast("Password is required for new users.", "error"); return; }
     if (!editingId && form.role === "Student") { toast("Students must self-register via Sign Up.", "error"); return; }
 
     const isStaff = ["Admin", "Scheduler", "Lecturer"].includes(form.role);
@@ -1319,9 +1321,10 @@ function UsersTab({ db, setDb, toast }) {
     try {
       const endpoint = editingId ? `${API_BASE}/api/admin/users/${editingId}` : `${API_BASE}/api/admin/users`;
       const method = editingId ? "PUT" : "POST";
+      const selectedCourses = form.role === "Lecturer" ? form.courses : [];
       const body = editingId
-        ? { name: form.name, email: form.email, role: form.role, ...(form.password ? { password: form.password } : {}) }
-        : { name: form.name, email: form.email, role: form.role, password: form.password || "demo" };
+        ? { name: form.name, email: form.email, role: form.role, courses: selectedCourses, ...(form.password ? { password: form.password } : {}) }
+        : { name: form.name, email: form.email, role: form.role, password: form.password, courses: selectedCourses };
 
       const response = await fetch(endpoint, {
         method,
@@ -1334,7 +1337,7 @@ function UsersTab({ db, setDb, toast }) {
       }
 
       await refreshUsers();
-      setForm({ name: "", email: "", role: "Scheduler", password: "demo" });
+      setForm(emptyForm);
       setEditingId(null);
       toast(editingId ? "User updated." : "User added.", "success");
     } catch (error) {
@@ -1346,7 +1349,7 @@ function UsersTab({ db, setDb, toast }) {
 
   const edit = (user) => {
     setEditingId(user.id);
-    setForm({ name: user.name, email: user.email, role: user.role, password: "" });
+    setForm({ name: user.name, email: user.email, role: user.role, password: "", courses: user.courses || [] });
   };
 
   const del = async (id) => {
@@ -1376,18 +1379,68 @@ function UsersTab({ db, setDb, toast }) {
             {roleOptions.map((r) => <option key={r}>{r}</option>)}
           </select>
           <input placeholder={editingId ? "New password (optional)" : "Password"} value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
+          {form.role === "Lecturer" && (
+            <select value="" onChange={(e) => {
+              const courseId = e.target.value;
+              if (!courseId) return;
+              setForm((f) => ({ ...f, courses: [...new Set([...(f.courses || []), courseId])] }));
+            }}>
+              <option value="">Add module by code/name</option>
+              {db.courses
+                .filter((c) => !(form.courses || []).includes(c.id))
+                .map((c) => <option key={c.id} value={c.id}>{c.code} — {c.name}</option>)}
+            </select>
+          )}
+          {form.role === "Lecturer" && (
+            <div className="form-full" style={{ border: "1px solid var(--line)", borderRadius: 10, padding: ".55rem .7rem", background: "#f8fbff" }}>
+              <div style={{ fontSize: ".8rem", color: "var(--muted)", marginBottom: ".45rem" }}>Assigned modules</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: ".4rem" }}>
+                {(form.courses || []).map((courseId) => {
+                  const course = db.courses.find((c) => c.id === courseId);
+                  if (!course) return null;
+                  return (
+                    <button
+                      key={courseId}
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setForm((f) => ({ ...f, courses: (f.courses || []).filter((id) => id !== courseId) }))}
+                      style={{ padding: ".2rem .5rem" }}
+                    >
+                      {course.code} ×
+                    </button>
+                  );
+                })}
+                {(form.courses || []).length === 0 && <span style={{ fontSize: ".78rem", color: "var(--muted)", fontStyle: "italic" }}>No modules selected.</span>}
+              </div>
+            </div>
+          )}
           <button className="btn btn-blue" onClick={save} disabled={saving}>{editingId ? "Update User" : "Add User"}</button>
-          {editingId && <button className="btn btn-outline" onClick={() => { setEditingId(null); setForm({ name: "", email: "", role: "Scheduler", password: "demo" }); }} disabled={saving}>Cancel</button>}
+          {editingId && <button className="btn btn-outline" onClick={() => { setEditingId(null); setForm(emptyForm); }} disabled={saving}>Cancel</button>}
         </div>
       </div>
       <div className="panel"><h3>All Users ({db.users.length})</h3>
         <div className="table-wrap"><table>
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Modules / Students</th><th>Actions</th></tr></thead>
           <tbody>{db.users.map((u) => (
             <tr key={u.id}>
               <td><div style={{ display: "flex", alignItems: "center", gap: ".6rem" }}><div className="avatar" style={{ width: 28, height: 28, fontSize: ".72rem" }}>{initials(u.name)}</div>{u.name}</div></td>
               <td style={{ color: "var(--muted)" }}>{u.email}</td>
               <td><span className={`badge ${{ Admin: "badge-rose", Scheduler: "badge-amber", Lecturer: "badge-blue", Student: "badge-teal" }[u.role]}`}>{u.role}</span></td>
+              <td>
+                {u.role !== "Lecturer"
+                  ? <span style={{ color: "var(--muted)" }}>—</span>
+                  : (() => {
+                    const taughtCourses = db.courses.filter((c) => (u.courses || []).includes(c.id));
+                    const taughtCourseIds = new Set(taughtCourses.map((c) => c.id));
+                    const linkedStudents = db.users.filter((s) => s.role === "Student" && (s.courses || []).some((courseId) => taughtCourseIds.has(courseId)));
+                    return (
+                      <div>
+                        <div style={{ fontSize: ".78rem", color: "var(--ink)", fontWeight: 600 }}>{taughtCourses.map((c) => c.code).join(", ") || "No modules"}</div>
+                        <div style={{ fontSize: ".74rem", color: "var(--muted)" }}>{linkedStudents.length} linked student{linkedStudents.length === 1 ? "" : "s"}</div>
+                      </div>
+                    );
+                  })()}
+              </td>
               <td><div className="btn-row"><button className="btn btn-outline btn-sm" onClick={() => edit(u)} disabled={saving}>Edit</button><button className="btn btn-danger btn-sm" onClick={() => del(u.id)} disabled={saving}>Remove</button></div></td>
             </tr>
           ))}</tbody>
@@ -1771,6 +1824,7 @@ function TimetableTab({ db, user }) {
 function NotificationsTab({ db, setDb, user, toast }) {
   const [form, setForm] = useState({ to: "", title: "", message: "" });
   const canSend = ["Admin", "Scheduler", "Lecturer"].includes(user.role);
+  const isAdminOrScheduler = ["Admin", "Scheduler"].includes(user.role);
 
   const visible = db.notifications.filter((n) =>
     n.toRole === "All" || n.toRole === user.role || n.toUserId === user.id || (n.fromUserId === user.id)
@@ -1785,6 +1839,41 @@ function NotificationsTab({ db, setDb, user, toast }) {
   const send = () => {
     if (!form.to || !form.title) { toast("Fill all fields.", "error"); return; }
     const [type, val] = form.to.split(":");
+
+    if (type === "course") {
+      const enrolledStudents = db.users.filter((u) => u.role === "Student" && (u.courses || []).includes(val));
+      const course = db.courses.find((c) => c.id === val);
+
+      if (enrolledStudents.length === 0) {
+        toast("No students are linked to that module/course.", "error");
+        return;
+      }
+
+      const createdAt = new Date().toISOString();
+      const scopedMessage = `${form.message}${form.message ? " " : ""}[Module: ${course?.code || val}]`;
+      const tempList = [...db.notifications];
+      const nextNotifications = enrolledStudents.map((student) => {
+        const id = nextId("n", tempList);
+        const notification = {
+          id,
+          fromUserId: user.id,
+          toRole: "Student",
+          toUserId: student.id,
+          title: form.title,
+          message: scopedMessage,
+          createdAt,
+          readBy: [],
+        };
+        tempList.push(notification);
+        return notification;
+      });
+
+      setDb((d) => ({ ...d, notifications: [...d.notifications, ...nextNotifications] }));
+      setForm({ to: "", title: "", message: "" });
+      toast(`Notification sent to ${enrolledStudents.length} student${enrolledStudents.length === 1 ? "" : "s"}.`, "success");
+      return;
+    }
+
     const n = {
       id: nextId("n", db.notifications),
       fromUserId: user.id,
@@ -1800,13 +1889,20 @@ function NotificationsTab({ db, setDb, user, toast }) {
     toast("Notification sent.", "success");
   };
 
-  const recipientOpts = [
-    { v: "role:All", l: "Everyone" },
-    { v: "role:Student", l: "All Students" },
-    { v: "role:Lecturer", l: "All Lecturers" },
-    { v: "role:Scheduler", l: "All Schedulers" },
-    ...db.users.filter((u) => u.id !== user.id).map((u) => ({ v: `user:${u.id}`, l: `${u.name} (${u.role})` })),
-  ];
+  const recipientOpts = isAdminOrScheduler
+    ? [
+        { v: "role:Student", l: "All Students" },
+        { v: "role:Scheduler", l: "All Schedulers" },
+        { v: "role:Lecturer", l: "All Lecturers" },
+        ...db.courses.map((c) => ({ v: `course:${c.id}`, l: `Students in ${c.code} — ${c.name}` })),
+      ]
+    : [
+        { v: "role:All", l: "Everyone" },
+        { v: "role:Student", l: "All Students" },
+        { v: "role:Lecturer", l: "All Lecturers" },
+        { v: "role:Scheduler", l: "All Schedulers" },
+        ...db.users.filter((u) => u.id !== user.id).map((u) => ({ v: `user:${u.id}`, l: `${u.name} (${u.role})` })),
+      ];
 
   return (
     <>

@@ -418,7 +418,7 @@ export async function createNotification(notificationData) {
   }
 }
 
-export async function createUser({ name, email, role, password }) {
+export async function createUser({ name, email, role, password, courses = [] }) {
   const activePool = await getPool()
   const connection = await activePool.getConnection()
 
@@ -447,6 +447,20 @@ export async function createUser({ name, email, role, password }) {
       'INSERT INTO users (id, name, email, role, password, is_verified, verification_token, verification_token_expires) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [userId, name, email, role, password, isVerified, verificationToken, verificationExpires]
     )
+
+    if (role === 'Lecturer') {
+      await connection.execute('DELETE FROM courses WHERE lecturer_id = ?', [userId])
+      await connection.execute('DELETE FROM course_students WHERE user_id = ?', [userId])
+
+      const selectedCourses = Array.isArray(courses)
+        ? [...new Set(courses.map((courseId) => String(courseId).trim()).filter(Boolean))]
+        : []
+
+      for (const courseId of selectedCourses) {
+        await connection.execute('UPDATE courses SET lecturer_id = ? WHERE id = ?', [userId, courseId])
+        await connection.execute('INSERT IGNORE INTO course_students (course_id, user_id) VALUES (?, ?)', [courseId, userId])
+      }
+    }
 
     await connection.commit()
 
@@ -510,6 +524,8 @@ export async function updateUserById(userId, updates) {
       return { success: false, error: 'User not found' }
     }
 
+    const currentRole = rows[0].role
+
     const fields = []
     const values = []
 
@@ -538,13 +554,36 @@ export async function updateUserById(userId, updates) {
       values.push(updates.isVerified ? 1 : 0)
     }
 
-    if (fields.length === 0) {
+    if (fields.length === 0 && updates.courses === undefined) {
       await connection.rollback()
       return { success: false, error: 'No valid fields to update' }
     }
 
-    values.push(userId)
-    await connection.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values)
+    if (fields.length > 0) {
+      values.push(userId)
+      await connection.execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values)
+    }
+
+    const nextRole = typeof updates.role === 'string' && updates.role.trim() ? updates.role : currentRole
+
+    if (nextRole === 'Lecturer' && updates.courses !== undefined) {
+      const selectedCourses = Array.isArray(updates.courses)
+        ? [...new Set(updates.courses.map((courseId) => String(courseId).trim()).filter(Boolean))]
+        : []
+
+      await connection.execute('UPDATE courses SET lecturer_id = NULL WHERE lecturer_id = ?', [userId])
+      await connection.execute('DELETE FROM course_students WHERE user_id = ?', [userId])
+
+      for (const courseId of selectedCourses) {
+        await connection.execute('UPDATE courses SET lecturer_id = ? WHERE id = ?', [userId, courseId])
+        await connection.execute('INSERT IGNORE INTO course_students (course_id, user_id) VALUES (?, ?)', [courseId, userId])
+      }
+    }
+
+    if (nextRole !== 'Lecturer' && currentRole === 'Lecturer') {
+      await connection.execute('UPDATE courses SET lecturer_id = NULL WHERE lecturer_id = ?', [userId])
+      await connection.execute('DELETE FROM course_students WHERE user_id = ?', [userId])
+    }
 
     await connection.commit()
     return { success: true }
