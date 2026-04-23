@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="CampusGrid logo">
+  <defs>
+    <linearGradient id="cgA" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="cgB" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#274a8f"/>
+      <stop offset="1" stop-color="#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="cgC" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e40af"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="cgD" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#93c5fd"/>
+      <stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="112" height="112" rx="22" ry="22" fill="#0b2a5c" opacity="0.08"/>
+
+  <rect x="18" y="18" width="44" height="44" rx="10" fill="url(#cgA)"/>
+  <rect x="66" y="18" width="44" height="44" rx="10" fill="url(#cgB)"/>
+  <rect x="18" y="66" width="44" height="44" rx="10" fill="url(#cgC)"/>
+  <rect x="66" y="66" width="44" height="44" rx="10" fill="url(#cgD)"/>
+
+  <g stroke="#f8fafc" stroke-width="5" stroke-linecap="round" fill="none" opacity="0.98">
+    <path d="M64 34 L64 64"/>
+    <path d="M34 64 L64 64"/>
+    <path d="M64 64 L94 64"/>
+    <path d="M64 64 L64 94"/>
+  </g>
+
+  <circle cx="64" cy="64" r="8" fill="#f8fafc"/>
+  <circle cx="64" cy="34" r="6" fill="#f8fafc"/>
+  <circle cx="34" cy="64" r="6" fill="#f8fafc"/>
+  <circle cx="94" cy="64" r="6" fill="#f8fafc"/>
+  <circle cx="64" cy="94" r="6" fill="#f8fafc"/>
+</svg>

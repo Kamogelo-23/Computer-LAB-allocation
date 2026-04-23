@@ -1,0 +1,22 @@
+{
+  "name": "labconnect-backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "multer": "^2.1.1",
+    "mysql2": "^3.11.3",
+    "nodemailer": "^8.0.5",
+    "pdf-parse": "^2.4.5",
+    "prisma": "^6.15.0",
+    "tesseract.js": "^7.0.0"
+  }
+}

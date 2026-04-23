@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Faculty {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  code      String?  @unique
+  courses   Course[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id        Int       @id @default(autoincrement())
+  name      String
+  code      String    @unique
+  facultyId Int
+  faculty   Faculty   @relation(fields: [facultyId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  students  Student[]
+  modules   Module[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([facultyId])
+}
+
+model Student {
+  id            Int          @id @default(autoincrement())
+  studentNumber String       @unique
+  firstName     String
+  lastName      String
+  email         String       @unique
+  phone         String?
+  isVerified    Boolean      @default(false) @map("is_verified")
+  status        StudentVerificationStatus @default(PENDING)
+  proofFileName String?      @map("proof_file_name") @db.VarChar(255)
+  courseId      Int
+  course        Course       @relation(fields: [courseId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  enrollments   Enrollment[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([courseId])
+}
+
+enum StudentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model Module {
+  id          Int          @id @default(autoincrement())
+  name        String
+  code        String       @unique
+  courseId    Int
+  course      Course       @relation(fields: [courseId], references: [id], onUpdate: Cascade, onDelete: Restrict)
+  enrollments Enrollment[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([courseId])
+}
+
+model Enrollment {
+  id         Int      @id @default(autoincrement())
+  studentId  Int
+  moduleId   Int
+  enrolledAt DateTime @default(now())
+  student    Student  @relation(fields: [studentId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  module     Module   @relation(fields: [moduleId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@unique([studentId, moduleId])
+  @@index([studentId])
+  @@index([moduleId])
+}
+
+enum NotificationRole {
+  Admin
+  Scheduler
+  Lecturer
+  Student
+  All
+}
+
+enum NotificationCategory {
+  General
+  Allocation
+  Request
+  Reminder
+  System
+}
+
+enum NotificationPriority {
+  low
+  normal
+  high
+}
+
+model Notification {
+  id         String                 @id @db.VarChar(32)
+  fromUserId String                 @map("from_user_id") @db.VarChar(32)
+  toRole     NotificationRole?      @map("to_role")
+  toUserId   String?                @map("to_user_id") @db.VarChar(32)
+  category   NotificationCategory   @default(General)
+  priority   NotificationPriority   @default(normal)
+  title      String                 @db.VarChar(255)
+  message    String                 @db.Text
+  isArchived Boolean                @default(false) @map("is_archived")
+  expiresAt  DateTime?              @map("expires_at") @db.DateTime(0)
+  createdAt  DateTime               @default(now()) @map("created_at")
+  reads      NotificationRead[]
+
+  @@index([fromUserId], map: "idx_notifications_from_user_id")
+  @@index([toRole], map: "idx_notifications_to_role")
+  @@index([toUserId], map: "idx_notifications_to_user_id")
+  @@index([createdAt], map: "idx_notifications_created_at")
+  @@index([isArchived], map: "idx_notifications_is_archived")
+  @@map("notifications")
+}
+
+model NotificationRead {
+  notificationId String       @map("notification_id") @db.VarChar(32)
+  userId         String       @map("user_id") @db.VarChar(32)
+  readAt         DateTime     @default(now()) @map("read_at")
+  notification   Notification @relation(fields: [notificationId], references: [id], onUpdate: Cascade, onDelete: Cascade)
+
+  @@id([notificationId, userId])
+  @@index([userId], map: "idx_notification_reads_user_id")
+  @@map("notification_reads")
+}
