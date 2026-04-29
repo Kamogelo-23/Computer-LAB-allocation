@@ -2375,6 +2375,7 @@ function CoursesTab({ db, setDb, toast }) {
                 <th>Code</th>
                 <th>Module Name</th>
                 <th>Lecturer</th>
+                <th>Faculty</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -2395,6 +2396,7 @@ function CoursesTab({ db, setDb, toast }) {
                         {allocCount > 0 && <div style={{ fontSize: ".74rem", color: "var(--muted)", marginTop: ".1rem" }}>{allocCount} allocation{allocCount > 1 ? "s" : ""}</div>}
                       </td>
                       <td>{lecturerNames.length > 0 ? lecturerNames.join(", ") : "—"}</td>
+                      <td>{c.facultyName || "—"}</td>
                       <td>
                         <div className="btn-row">
                           <button className="btn btn-outline btn-sm" onClick={() => startEdit(c)}>Edit</button>
@@ -2405,7 +2407,7 @@ function CoursesTab({ db, setDb, toast }) {
 
                     {isSelected && (
                       <tr>
-                        <td colSpan={4} style={{ padding: 0, borderBottom: "1px solid var(--line)" }}>
+                        <td colSpan={5} style={{ padding: 0, borderBottom: "1px solid var(--line)" }}>
                           <div className="module-detail-shell">
                             <div className="module-detail-top">
                               <div>
@@ -2433,6 +2435,10 @@ function CoursesTab({ db, setDb, toast }) {
                                 {c.types ? (
                                   <span className="badge badge-teal module-detail-badge">{c.types.practical && c.types.theory ? "Practical + Theory" : c.types.practical ? "Practical" : "Theory"}</span>
                                 ) : <span className="badge" style={{ background: "#f1f5f9", color: "var(--muted)" }}>—</span>}
+                              </div>
+                              <div className="module-detail-stat">
+                                <div className="module-detail-stat-label">Faculty</div>
+                                <div className="module-detail-stat-value">{c.facultyName || "—"}</div>
                               </div>
                             </div>
 
