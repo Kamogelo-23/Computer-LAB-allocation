@@ -554,6 +554,12 @@ export async function createCourse(courseData) {
         facultyName,
         types,
         groups,
+    const [rows] = await connection.execute('SELECT id FROM courses WHERE id = ? LIMIT 1', [courseId])
+    if (rows.length === 0) {
+      return { success: false, error: 'Module not found' }
+    }
+
+    const code = String(updates.code || '').trim().toUpperCase()
       },
     }
   } catch (error) {
@@ -627,13 +633,6 @@ export async function updateCourseById(courseId, updates) {
     await connection.release()
   }
 }
-
-export async function deleteCourseById(courseId) {
-  const activePool = await getPool()
-  const connection = await activePool.getConnection()
-
-  try {
-    await connection.beginTransaction()
 
     const [rows] = await connection.execute('SELECT id FROM courses WHERE id = ? LIMIT 1', [courseId])
     if (rows.length === 0) {
