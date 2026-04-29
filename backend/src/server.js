@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
-import { findUserForLogin, getDatabaseSnapshot, initDatabase, createUser, generatePasswordResetToken, resetUserPassword, verifyEmailToken, listUsers, updateUserById, deleteUserById } from './db.js'
+import { findUserForLogin, getDatabaseSnapshot, initDatabase, createUser, generatePasswordResetToken, resetUserPassword, verifyEmailToken, listUsers, updateUserById, deleteUserById, createCourse, updateCourseById, deleteCourseById } from './db.js'
 import { initEmailService, sendEmail, emailTemplates } from './email.js'
 import { extractRegistrationData } from './services/RegistrationService.js'
 
@@ -20,6 +20,55 @@ app.get('/api/db', async (_req, res, next) => {
   try {
     const db = await getDatabaseSnapshot()
     res.json(db)
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.post('/api/admin/courses', async (req, res, next) => {
+  try {
+    const result = await createCourse(req.body ?? {})
+    if (!result.success) {
+      return res.status(400).json({ error: result.error })
+    }
+
+    res.status(201).json({ success: true, course: result.course })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.put('/api/admin/courses/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params
+    if (!id) {
+      return res.status(400).json({ error: 'Module id is required' })
+    }
+
+    const result = await updateCourseById(id, req.body ?? {})
+    if (!result.success) {
+      return res.status(400).json({ error: result.error })
+    }
+
+    res.json({ success: true, course: result.course })
+  } catch (error) {
+    next(error)
+  }
+})
+
+app.delete('/api/admin/courses/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params
+    if (!id) {
+      return res.status(400).json({ error: 'Module id is required' })
+    }
+
+    const result = await deleteCourseById(id)
+    if (!result.success) {
+      return res.status(400).json({ error: result.error })
+    }
+
+    res.json({ success: true })
   } catch (error) {
     next(error)
   }

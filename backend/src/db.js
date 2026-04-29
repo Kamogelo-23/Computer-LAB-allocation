@@ -16,6 +16,48 @@ let pool = null
 const toSqlDate = (iso) => iso?.slice(0, 10) ?? null
 const toSqlTime = (time) => time ?? null
 
+const safeJsonParse = (value, fallback) => {
+  if (value === null || value === undefined || value === '') {
+    return fallback
+  }
+
+  if (typeof value === 'object') {
+    return value
+  }
+
+  try {
+    return JSON.parse(value)
+  } catch {
+    return fallback
+  }
+}
+
+const normalizeCourseTypes = (types, requiresLabFallback = false) => {
+  if (!types || typeof types !== 'object') {
+    return {
+      practical: Boolean(requiresLabFallback),
+      theory: !Boolean(requiresLabFallback),
+    }
+  }
+
+  return {
+    practical: Boolean(types.practical),
+    theory: Boolean(types.theory),
+  }
+}
+
+const normalizeCourseGroups = (groups) => {
+  if (!Array.isArray(groups)) {
+    return []
+  }
+
+  return groups.map((group, index) => ({
+    groupName: String(group?.groupName || `Group ${index + 1}`).trim() || `Group ${index + 1}`,
+    students: Number.parseInt(group?.students, 10) || 0,
+    lecturerId: group?.lecturerId ? String(group.lecturerId).trim() : null,
+  }))
+}
+
 async function getPool() {
   if (!pool) {
     pool = mysql.createPool({
@@ -96,9 +138,10 @@ async function seedDatabase() {
     console.log(`✓ Students must sign up via frontend with @tut4life.ac.za email`)
 
     for (const course of initialDb.courses) {
+      const types = normalizeCourseTypes({ practical: Boolean(course.requiresLab), theory: !course.requiresLab }, course.requiresLab)
       await connection.execute(
-        'INSERT IGNORE INTO courses (id, code, name, group_size, requires_lab, section, lecturer_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [course.id, course.code, course.name, course.groupSize, course.requiresLab ? 1 : 0, course.section || null, course.lecturerId || null]
+        'INSERT IGNORE INTO courses (id, code, name, group_size, num_groups, requires_lab, section, lecturer_id, module_types, groups_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [course.id, course.code, course.name, course.groupSize, 0, course.requiresLab ? 1 : 0, course.section || null, course.lecturerId || null, JSON.stringify(types), JSON.stringify([])]
       )
     }
 
@@ -180,8 +223,23 @@ async function ensureUserColumns() {
   }
 }
 
-async function ensureNotificationColumns() {
-  const activePool = await getPool()
+async function ensureNotificationColumns() {  const activePool = await getPool()
+  const alterStatements = [
+    'ALTER TABLE courses ADD COLUMN faculty_name VARCHAR(255) DEFAULT NULL',
+  ]
+
+  for (const sql of alterStatements) {
+    try {
+      await activePool.query(sql)
+    } catch (error) {
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        throw error
+      }
+    }
+  }
+}
+
+async function ensureCourseColumnsOld() {  const activePool = await getPool()
   const alterStatements = [
     "ALTER TABLE notifications ADD COLUMN category ENUM('General', 'Allocation', 'Request', 'Reminder', 'System') NOT NULL DEFAULT 'General'",
     "ALTER TABLE notifications ADD COLUMN priority ENUM('low', 'normal', 'high') NOT NULL DEFAULT 'normal'",
@@ -217,12 +275,32 @@ async function ensureNotificationColumns() {
   }
 }
 
+async function ensureCourseColumns() {
+  const activePool = await getPool()
+  const alterStatements = [
+    'ALTER TABLE courses ADD COLUMN num_groups INT NOT NULL DEFAULT 0',
+    'ALTER TABLE courses ADD COLUMN module_types JSON NULL',
+    'ALTER TABLE courses ADD COLUMN groups_json JSON NULL',
+    'ALTER TABLE courses ADD COLUMN faculty_name VARCHAR(255) DEFAULT NULL',
+  ]
+
+  for (const sql of alterStatements) {
+    try {
+      await activePool.query(sql)
+    } catch (error) {
+      if (error.code !== 'ER_DUP_FIELDNAME') {
+        throw error
+      }
+    }
+  }
+}
+
 async function loadDbSnapshot() {
   const activePool = await getPool()
 
   const [venues] = await activePool.query('SELECT id, name, capacity, type, has_computers AS hasComputers FROM venues ORDER BY name')
   const [users] = await activePool.query('SELECT id, name, email, role, password, email_notif AS emailNotif, in_app_notif AS inAppNotif, compact_mode AS compact FROM users ORDER BY name')
-  const [courses] = await activePool.query('SELECT id, code, name, group_size AS groupSize, requires_lab AS requiresLab, section, lecturer_id AS lecturerId FROM courses ORDER BY code')
+  const [courses] = await activePool.query('SELECT id, code, name, group_size AS groupSize, num_groups AS numGroups, requires_lab AS requiresLab, section, lecturer_id AS lecturerId, faculty_name AS facultyName, module_types AS moduleTypes, groups_json AS groupsJson FROM courses ORDER BY code')
   const [courseStudents] = await activePool.query('SELECT course_id AS courseId, user_id AS userId FROM course_students')
   const [allocations] = await activePool.query('SELECT id, course_id AS courseId, venue_id AS venueId, lecturer_id AS lecturerId, DATE_FORMAT(allocation_date, "%Y-%m-%d") AS date, TIME_FORMAT(start_time, "%H:%i") AS startTime, TIME_FORMAT(end_time, "%H:%i") AS endTime, created_by AS createdBy, created_at AS createdAt FROM allocations ORDER BY allocation_date, start_time')
   const [notifications] = await activePool.query('SELECT id, from_user_id AS fromUserId, to_role AS toRole, to_user_id AS toUserId, title, message, created_at AS createdAt FROM notifications ORDER BY created_at DESC')
@@ -259,7 +337,13 @@ async function loadDbSnapshot() {
     })),
     courses: courses.map((course) => ({
       ...course,
+      groupSize: Number(course.groupSize) || 0,
+      numGroups: Number(course.numGroups) || 0,
       requiresLab: Boolean(course.requiresLab),
+      types: normalizeCourseTypes(safeJsonParse(course.moduleTypes, null), Boolean(course.requiresLab)),
+      groups: normalizeCourseGroups(safeJsonParse(course.groupsJson, [])),
+      lecturerId: course.lecturerId || null,
+      facultyName: course.facultyName || null,
     })),
     allocations: allocations.map((allocation) => ({
       ...allocation,
@@ -277,6 +361,7 @@ export async function initDatabase() {
   await bootstrapSchema()
   await ensureUserColumns()
   await ensureNotificationColumns()
+  await ensureCourseColumns()
   await seedDatabase()
 }
 
@@ -413,6 +498,154 @@ export async function createNotification(notificationData) {
   } catch (error) {
     await connection.rollback()
     throw error
+  } finally {
+    await connection.release()
+  }
+}
+
+export async function createCourse(courseData) {
+  const activePool = await getPool()
+  const connection = await activePool.getConnection()
+
+  try {
+    await connection.beginTransaction()
+
+    const code = String(courseData.code || '').trim().toUpperCase()
+    const name = String(courseData.name || '').trim()
+    const groupSize = Number.parseInt(courseData.groupSize, 10)
+    const numGroups = Number.parseInt(courseData.numGroups, 10) || 0
+    const section = courseData.section ? String(courseData.section).trim().toUpperCase() : null
+    const facultyName = courseData.faculty ? String(courseData.faculty).trim() : null
+    const groups = normalizeCourseGroups(courseData.groups)
+    const types = normalizeCourseTypes(courseData.types, courseData.requiresLab)
+    const lecturerId = courseData.lecturerId ? String(courseData.lecturerId).trim() : (groups.find((group) => group.lecturerId)?.lecturerId || null)
+
+    if (!code || !name || !Number.isFinite(groupSize) || groupSize <= 0) {
+      await connection.rollback()
+      return { success: false, error: 'Missing required module fields' }
+    }
+
+    const [existing] = await connection.execute('SELECT id FROM courses WHERE code = ? LIMIT 1', [code])
+    if (existing.length > 0) {
+      await connection.rollback()
+      return { success: false, error: 'Module code already exists' }
+    }
+
+    const id = courseData.id || randomUUID().substring(0, 32)
+
+    await connection.execute(
+      'INSERT INTO courses (id, code, name, group_size, num_groups, requires_lab, section, lecturer_id, faculty_name, module_types, groups_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, code, name, groupSize, numGroups, types.practical ? 1 : 0, section, lecturerId, facultyName, JSON.stringify(types), JSON.stringify(groups)]
+    )
+
+    await connection.commit()
+
+    return {
+      success: true,
+      course: {
+        id,
+        code,
+        name,
+        groupSize,
+        numGroups,
+        requiresLab: Boolean(types.practical),
+        section,
+        lecturerId,
+        facultyName,
+        types,
+        groups,
+    const [rows] = await connection.execute('SELECT id FROM courses WHERE id = ? LIMIT 1', [courseId])
+    if (rows.length === 0) {
+      return { success: false, error: 'Module not found' }
+    }
+
+    const code = String(updates.code || '').trim().toUpperCase()
+      },
+    }
+  } catch (error) {
+    await connection.rollback()
+    return { success: false, error: error.message }
+  } finally {
+    await connection.release()
+  }
+}
+
+export async function updateCourseById(courseId, updates) {
+  const activePool = await getPool()
+  const connection = await activePool.getConnection()
+
+  try {
+    await connection.beginTransaction()
+
+    const [rows] = await connection.execute('SELECT id FROM courses WHERE id = ? LIMIT 1', [courseId])
+    if (rows.length === 0) {
+      return { success: false, error: 'Module not found' }
+    }
+
+    const code = String(updates.code || '').trim().toUpperCase()
+    const name = String(updates.name || '').trim()
+    const groupSize = Number.parseInt(updates.groupSize, 10)
+    const numGroups = Number.parseInt(updates.numGroups, 10) || 0
+    const section = updates.section ? String(updates.section).trim().toUpperCase() : null
+    const facultyName = updates.faculty ? String(updates.faculty).trim() : null
+    const groups = normalizeCourseGroups(updates.groups)
+    const types = normalizeCourseTypes(updates.types, updates.requiresLab)
+    const lecturerId = updates.lecturerId ? String(updates.lecturerId).trim() : (groups.find((group) => group.lecturerId)?.lecturerId || null)
+
+    if (!code || !name || !Number.isFinite(groupSize) || groupSize <= 0) {
+      await connection.rollback()
+      return { success: false, error: 'Missing required module fields' }
+    }
+
+    const [duplicateRows] = await connection.execute('SELECT id FROM courses WHERE code = ? AND id <> ? LIMIT 1', [code, courseId])
+    if (duplicateRows.length > 0) {
+      await connection.rollback()
+      return { success: false, error: 'Module code already exists' }
+    }
+
+    await connection.execute(
+      'UPDATE courses SET code = ?, name = ?, group_size = ?, num_groups = ?, requires_lab = ?, section = ?, lecturer_id = ?, faculty_name = ?, module_types = ?, groups_json = ? WHERE id = ?',
+      [code, name, groupSize, numGroups, types.practical ? 1 : 0, section, lecturerId, facultyName, JSON.stringify(types), JSON.stringify(groups), courseId]
+    )
+
+    await connection.commit()
+
+    return {
+      success: true,
+      course: {
+        id: courseId,
+        code,
+        name,
+        groupSize,
+        numGroups,
+        requiresLab: Boolean(types.practical),
+        section,
+        lecturerId,
+        facultyName,
+        types,
+        groups,
+      },
+    }
+  } catch (error) {
+    await connection.rollback()
+    return { success: false, error: error.message }
+  } finally {
+    await connection.release()
+  }
+}
+
+    const [rows] = await connection.execute('SELECT id FROM courses WHERE id = ? LIMIT 1', [courseId])
+    if (rows.length === 0) {
+      return { success: false, error: 'Module not found' }
+    }
+
+    await connection.execute('DELETE FROM courses WHERE id = ?', [courseId])
+    await connection.commit()
+
+    return { success: true }
+  } catch (error) {
+    await connection.rollback()
+    return { success: false, error: error.message }
   } finally {
     await connection.release()
   }

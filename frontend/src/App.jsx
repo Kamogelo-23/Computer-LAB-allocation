@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { Fragment, useState, useEffect, useCallback } from "react";
 import campusGridLogo from "./assets/campusgrid-logo.svg";
 
 // ─── Palette & Globals ────────────────────────────────────────────────────────
@@ -29,114 +29,131 @@ const CSS = `
 
   body { background: var(--paper); color: var(--ink); }
 
-  .cc-app {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(135deg, #dce9ff 0%, #f0f5fd 40%, #e4f0fb 100%);
-  }
-
-  /* ── LOGIN ── */
   .login-wrap {
     min-height: 100vh;
     display: grid;
-    grid-template-columns: 1.1fr 1fr;
-    overflow: hidden;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
   }
-  @media(max-width:700px){ .login-wrap { grid-template-columns:1fr; } .login-hero { display:none; } }
 
   .login-hero {
-    background: linear-gradient(155deg, #071a3e 0%, #0b2a5c 45%, #0f3d7a 75%, #1353c8 100%);
+    background: linear-gradient(135deg, #0b2a5c 0%, #1a4d8f 100%);
     color: white;
-    padding: 3rem 3.5rem;
+    padding: 3rem 2.5rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    position: relative;
-    overflow: hidden;
+    overflow-y: auto;
   }
-  .login-hero::before {
-    content:'';
-    position:absolute; inset:0;
-    background:
-      radial-gradient(ellipse at 90% 10%, rgba(99,179,237,0.13) 0%, transparent 50%),
-      radial-gradient(ellipse at 5% 90%, rgba(59,130,246,0.15) 0%, transparent 55%),
-      radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 70%);
-  }
-  .login-hero::after {
-    content:'';
-    position:absolute;
-    bottom:-120px; right:-120px;
-    width:380px; height:380px;
-    border-radius:50%;
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: inset 0 0 80px rgba(59,130,246,0.08);
-    z-index:0;
-  }
-
-  .hero-top { position:relative; z-index:1; }
-  .hero-logo {
-    display: inline-flex; align-items: center; gap: .55rem;
-    font-family: 'DM Serif Display', serif; font-size: 1.4rem;
-    letter-spacing: -0.01em;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 999px;
-    padding: .4rem 1.1rem .4rem .65rem;
-  }
-  .hero-logo-icon { width: 34px; height: 34px; object-fit: contain; display:block; }
-
-  .hero-middle { position:relative; z-index:1; }
-  .hero-eyebrow {
-    font-size: .72rem; font-weight: 700; letter-spacing: .14em;
-    text-transform: uppercase; color: rgba(255,255,255,0.5);
-    margin-bottom: .9rem;
-  }
-  .hero-tagline {
-    font-size: clamp(2rem, 3.5vw, 3rem);
-    font-family:'DM Serif Display',serif;
-    line-height: 1.08;
-    position:relative; z-index:1;
-    margin-bottom: 1.1rem;
-  }
-  .hero-tagline em { font-style:italic; color: rgba(255,255,255,0.75); }
-  .hero-sub {
-    color: rgba(255,255,255,0.65); font-size:.93rem;
-    line-height: 1.65; max-width: 38ch;
-    position:relative; z-index:1;
-    margin-bottom: 1.8rem;
-  }
-
-  .hero-features { position:relative; z-index:1; display:flex; flex-direction:column; gap:.65rem; }
-  .hero-feature {
-    display: flex; align-items: flex-start; gap: .75rem;
-  }
-  .hero-feature-icon {
-    width: 32px; height: 32px; flex-shrink:0;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 8px;
-    display: flex; align-items:center; justify-content:center;
-    font-size: .95rem; margin-top:.05rem;
-  }
-  .hero-feature-text strong { display:block; font-size:.86rem; font-weight:600; color:rgba(255,255,255,0.92); }
-  .hero-feature-text span { font-size:.78rem; color:rgba(255,255,255,0.5); }
-
-  .hero-bottom { position:relative; z-index:1; border-top:1px solid rgba(255,255,255,0.1); padding-top:1.3rem; }
-  .hero-bottom p { font-size:.76rem; color:rgba(255,255,255,0.38); line-height:1.6; }
-  .hero-bottom strong { color:rgba(255,255,255,0.55); font-weight:600; }
-
-  .hero-badges { display:flex; gap:.6rem; flex-wrap:wrap; position:relative; z-index:1; }
-  .hero-badge { background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.2); border-radius:999px; padding:.28rem .85rem; font-size:.78rem; }
 
   .login-form-side {
-    display: flex; align-items: center; justify-content: center;
-    padding: 2.5rem;
-    background: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--paper);
   }
-  .login-card { width: 100%; max-width: 400px; }
+  .login-card {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(255,255,255,0.96);
+    border: 1px solid rgba(212,223,240,0.95);
+    border-radius: 24px;
+    box-shadow: 0 18px 60px rgba(11,42,92,0.14);
+    padding: 2.25rem;
+  }
   .login-card h2 { font-family: 'DM Serif Display', serif; font-size:1.9rem; margin-bottom:.3rem; }
   .login-card .sub { color: var(--muted); font-size:.9rem; margin-bottom:2rem; }
+
+  .hero-top {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  .hero-logo {
+    font-size: 1.6rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .hero-logo-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+  }
+  
+  .hero-middle {
+    flex: 1;
+  }
+  .hero-eyebrow {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.8;
+    margin-bottom: 0.6rem;
+  }
+  .hero-tagline {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.9rem;
+    line-height: 1.2;
+  }
+  .hero-tagline em {
+    font-style: italic;
+    opacity: 0.9;
+  }
+  .hero-sub {
+    font-size: 0.95rem;
+    opacity: 0.85;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+  
+  .hero-features {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .hero-feature {
+    display: flex;
+    gap: 0.8rem;
+  }
+  .hero-feature-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+  .hero-feature-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .hero-feature-text strong {
+    font-size: 0.95rem;
+  }
+  .hero-feature-text span {
+    font-size: 0.8rem;
+    opacity: 0.75;
+  }
+  
+  .hero-bottom {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    line-height: 1.5;
+  }
+  .hero-bottom p {
+    margin: 0;
+  }
+
+  @media (max-width: 1024px) {
+    .login-wrap {
+      grid-template-columns: 1fr;
+    }
+    .login-hero {
+      display: none;
+    }
+  }
 
   .field { display:flex; flex-direction:column; gap:.4rem; margin-bottom:1.1rem; }
   .field label { font-size:.82rem; font-weight:600; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; }
@@ -349,6 +366,79 @@ const CSS = `
   .module-card strong { font-size:1rem; font-family:'DM Serif Display',serif; }
   .module-card p { font-size:.83rem; color:var(--muted); margin:.3rem 0; }
   .module-card span { font-size:.76rem; }
+  .module-detail-shell {
+    background: linear-gradient(180deg, #f8fffd 0%, #f1fbf8 100%);
+    border-top: 1px solid rgba(13, 148, 136, 0.14);
+    border-bottom: 1px solid var(--line);
+    padding: 1.1rem 1.2rem 1.2rem;
+  }
+  .module-detail-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .module-detail-code {
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .25rem;
+  }
+  .module-detail-code-value {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .module-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: .9rem 1.1rem;
+    margin-bottom: 1rem;
+  }
+  .module-detail-stat {
+    background: rgba(255,255,255,.72);
+    border: 1px solid rgba(13, 148, 136, .10);
+    border-radius: 12px;
+    padding: .8rem .9rem;
+    box-shadow: 0 1px 0 rgba(11,42,92,0.03);
+  }
+  .module-detail-stat-label {
+    font-size: .7rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: .3rem;
+  }
+  .module-detail-stat-value {
+    font-size: .98rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .module-detail-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+  }
+  .module-detail-table {
+    border: 1px solid rgba(13, 148, 136, .12);
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255,255,255,.8);
+  }
+  .module-detail-table table { font-size: .86rem; }
+  .module-detail-table th { background: rgba(240, 253, 250, .9); }
+  .module-detail-table td, .module-detail-table th { padding: .7rem .85rem; }
+  .module-detail-note {
+    margin-top: 1rem;
+    color: var(--muted);
+    font-style: italic;
+    font-size: .88rem;
+  }
 
   /* ── NOTIFICATIONS ── */
   .notif-row { display:flex; gap:.8rem; align-items:flex-start; padding:.7rem 0; border-bottom:1px solid var(--line); }
@@ -449,7 +539,7 @@ const tabMeta = {
   overview:     { label: "Overview",        icon: "⊞" },
   venues:       { label: "Venues",          icon: "📍" },
   users:        { label: "Users",           icon: "👥" },
-  courses:      { label: "Course Management", icon: "🎓" },
+  courses:      { label: "Module Management", icon: "🎓" },
   allocations:  { label: "Allocations",     icon: "📅" },
   reports:      { label: "Reports",         icon: "📊" },
   conflicts:    { label: "Conflicts",       icon: "⚠️" },
@@ -472,12 +562,11 @@ const hashPassword = (value) => {
   for (let i = 0; i < input.length; i += 1) {
     hash = (hash * 31 + input.charCodeAt(i)) | 0;
   }
-  return `h$${Math.abs(hash).toString(36)}${input.length.toString(36)}`;
+  return `h$${Math.abs(hash).toString(36)}`;
 };
 
-const verifyPassword = (rawPassword, storedPassword) => {
-  if (isHashedPassword(storedPassword)) return hashPassword(rawPassword) === storedPassword;
-  return String(rawPassword ?? "") === String(storedPassword ?? "");
+const verifyPassword = (plaintext, hashedPassword) => {
+  return hashPassword(plaintext) === hashedPassword;
 };
 
 const normalizeDomainByRole = (email, role) => {
@@ -2078,57 +2167,137 @@ function SettingsTab({ db, setDb, user, toast }) {
   );
 }
 
-// ─── Courses Tab ──────────────────────────────────────────────────────────────
+// ─── Courses Tab (Module Management) ─────────────────────────────────────────
 function CoursesTab({ db, setDb, toast }) {
-  const emptyForm = { code: "", name: "", lecturerId: "", groupSize: "", section: "", requiresLab: false };
+  const emptyForm = { code: "", name: "", totalStudents: "", numGroups: "", faculty: "", types: { practical: false, theory: false } };
   const [form, setForm] = useState(emptyForm);
   const [editId, setEditId] = useState(null);
+  const [groupsVisible, setGroupsVisible] = useState(false);
+  const [groups, setGroups] = useState([]);
+  const [selectedModule, setSelectedModule] = useState(null);
 
   const lecturers = db.users.filter((u) => u.role === "Lecturer");
 
-  const save = () => {
-    if (!form.code || !form.name || !form.groupSize) { toast("Course code, name and group size are required.", "error"); return; }
-    if (editId) {
-      setDb((d) => ({ ...d, courses: d.courses.map((c) => c.id === editId ? { ...c, ...form, groupSize: +form.groupSize } : c) }));
-      toast("Course updated.", "success");
-      setEditId(null);
-    } else {
-      if (db.courses.some((c) => c.code === form.code)) { toast("Course code already exists.", "error"); return; }
-      const nc = { id: nextId("c", db.courses), ...form, groupSize: +form.groupSize };
-      setDb((d) => ({ ...d, courses: [...d.courses, nc] }));
-      toast("Course added.", "success");
+  const prepareGroups = () => {
+    if (!form.code || !form.name || !form.totalStudents || !form.numGroups) {
+      toast("Module code, name, total students and number of groups are required.", "error");
+      return;
     }
-    setForm(emptyForm);
+    if (!form.types.practical && !form.types.theory) {
+      toast("Select at least one type: Practical or Theory.", "error");
+      return;
+    }
+    const count = Math.max(1, parseInt(form.numGroups, 10) || 1);
+    const perGroup = Math.floor((parseInt(form.totalStudents, 10) || 0) / count);
+    setGroups(Array.from({ length: count }, (_, index) => ({ id: index + 1, groupName: `Group ${index + 1}`, students: perGroup, lecturerId: "" })));
+    setGroupsVisible(true);
+  };
+
+  const finalizeAdd = async () => {
+    const total = parseInt(form.totalStudents, 10) || 0;
+    const sum = groups.reduce((acc, group) => acc + (parseInt(group.students, 10) || 0), 0);
+    if (sum !== total) {
+      toast(`Sum of group students (${sum}) must equal total students (${total}).`, "error");
+      return;
+    }
+
+     const modulePayload = {
+       code: form.code.trim().toUpperCase(),
+       name: form.name.trim(),
+       groupSize: total,
+       numGroups: groups.length,
+       faculty: form.faculty.trim(),
+       types: form.types,
+       groups,
+     };
+
+    try {
+      if (editId) {
+        const response = await fetch(`${API_BASE}/api/admin/courses/${editId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(modulePayload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to update module.");
+        }
+
+        setDb((d) => ({
+          ...d,
+          courses: d.courses.map((c) => (c.id === editId ? { ...c, ...data.course } : c)),
+        }));
+        toast("Module updated.", "success");
+        setEditId(null);
+      } else {
+        if (db.courses.some((c) => c.code === modulePayload.code)) { toast("Module code already exists.", "error"); return; }
+
+        const response = await fetch(`${API_BASE}/api/admin/courses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(modulePayload),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to add module.");
+        }
+
+        setDb((d) => ({ ...d, courses: [...d.courses, data.course] }));
+        toast("Module added.", "success");
+      }
+
+      setForm(emptyForm);
+      setGroups([]);
+      setGroupsVisible(false);
+      setSelectedModule(null);
+    } catch (error) {
+      toast(error.message, "error");
+    }
   };
 
   const startEdit = (c) => {
     setEditId(c.id);
-    setForm({ code: c.code, name: c.name, lecturerId: c.lecturerId || "", groupSize: String(c.groupSize), section: c.section || "", requiresLab: c.requiresLab });
+     setForm({ code: c.code, name: c.name, totalStudents: String(c.groupSize || ""), numGroups: String(c.numGroups || ""), faculty: c.facultyName || "", types: c.types || { practical: false, theory: false } });
+    setGroups(c.groups ? c.groups.map((group, index) => ({ id: index + 1, groupName: group.groupName || `Group ${index + 1}`, students: String(group.students || 0), lecturerId: group.lecturerId || "" })) : []);
+    setGroupsVisible(Boolean(c.groups && c.groups.length));
   };
 
-  const del = (id) => {
-    if (db.allocations.some((a) => a.courseId === id)) { toast("Cannot delete: course has existing allocations.", "error"); return; }
-    setDb((d) => ({ ...d, courses: d.courses.filter((c) => c.id !== id) }));
-    toast("Course removed.", "success");
+  const del = async (id) => {
+    if (db.allocations.some((a) => a.courseId === id)) { toast("Cannot delete: module has existing allocations.", "error"); return; }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/admin/courses/${id}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete module.");
+      }
+
+      setDb((d) => ({ ...d, courses: d.courses.filter((c) => c.id !== id) }));
+      toast("Module removed.", "success");
+      if (selectedModule?.id === id) setSelectedModule(null);
+    } catch (error) {
+      toast(error.message, "error");
+    }
   };
 
-  const cancel = () => { setEditId(null); setForm(emptyForm); };
+  const cancel = () => { setEditId(null); setForm(emptyForm); setGroups([]); setGroupsVisible(false); };
+  const updateGroup = (index, key, value) => setGroups((g) => g.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
+  const toggleModuleDetails = (module) => setSelectedModule((current) => (current?.id === module.id ? null : module));
 
   return (
     <>
-      {/* Info panel */}
       <div className="panel" style={{ borderLeft: "4px solid var(--blue)", background: "#f0f6ff" }}>
-        <h3 style={{ marginBottom: ".5rem" }}>About Course Management</h3>
+        <h3 style={{ marginBottom: ".5rem" }}>About Module Management</h3>
         <p style={{ fontSize: ".88rem", color: "var(--muted)", lineHeight: 1.65, marginBottom: ".8rem" }}>
-          This page is used to manage academic courses that require venue scheduling. Course details are used by the Scheduler when allocating venues to ensure the right room is matched to each module.
+          This page is used to manage academic modules that require venue scheduling. Module details are used by the Scheduler when allocating venues to ensure the right room is matched to each module.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: ".5rem" }}>
           {[
-            { icon: "📘", label: "Course name & code" },
+            { icon: "📘", label: "Module code & name" },
             { icon: "👨‍🏫", label: "Assigned lecturer" },
-            { icon: "👥", label: "Group size" },
-            { icon: "🔤", label: "Group section" },
-            { icon: "🖥️", label: "Lab requirement" },
+            { icon: "👥", label: "Registered students" },
+            { icon: "🔤", label: "Groups" },
+            { icon: "🧩", label: "Practical / Theory" },
           ].map((f) => (
             <div key={f.label} style={{ display: "flex", alignItems: "center", gap: ".5rem", fontSize: ".82rem", color: "var(--ink)", background: "white", border: "1px solid var(--line)", borderRadius: "8px", padding: ".4rem .75rem" }}>
               <span>{f.icon}</span><span>{f.label}</span>
@@ -2137,100 +2306,174 @@ function CoursesTab({ db, setDb, toast }) {
         </div>
       </div>
 
-      {/* Form */}
       <div className="panel">
         <div className="panel-row">
-          <h3>{editId ? "Edit Course" : "Add New Course"}</h3>
+          <h3>{editId ? "Edit Module" : "Add New Module"}</h3>
           {editId && <button className="btn btn-outline btn-sm" onClick={cancel}>Cancel</button>}
         </div>
         <div className="form-grid">
-          <input
-            placeholder="Course code (e.g. CSC301)"
-            value={form.code}
-            onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
-          />
-          <input
-            placeholder="Course name"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          />
-          <select
-            value={form.lecturerId}
-            onChange={(e) => setForm((f) => ({ ...f, lecturerId: e.target.value }))}
-          >
-            <option value="">Assign lecturer (optional)</option>
-            {lecturers.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
-          <input
-            type="number"
-            placeholder="Group size"
-            value={form.groupSize}
-            min={1}
-            onChange={(e) => setForm((f) => ({ ...f, groupSize: e.target.value }))}
-          />
-          <input
-            placeholder="Group section (e.g. A, B, MAIN)"
-            value={form.section}
-            onChange={(e) => setForm((f) => ({ ...f, section: e.target.value.toUpperCase() }))}
-          />
-          <label style={{ display: "flex", alignItems: "center", gap: ".55rem", fontSize: ".88rem", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={form.requiresLab}
-              onChange={(e) => setForm((f) => ({ ...f, requiresLab: e.target.checked }))}
-            />
-            Requires computer lab
-          </label>
-          <button className="btn btn-blue" onClick={save}>{editId ? "Update Course" : "Add Course"}</button>
+          <input placeholder="Module code (e.g. CSC301)" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} />
+          <input placeholder="Name of the module" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+          <input type="number" placeholder="Number of students (registered for this module)" value={form.totalStudents} min={0} onChange={(e) => setForm((f) => ({ ...f, totalStudents: e.target.value }))} />
+          <input type="number" placeholder="Number of groups" value={form.numGroups} min={1} onChange={(e) => setForm((f) => ({ ...f, numGroups: e.target.value }))} />
+           <input placeholder="Faculty (e.g., Engineering, Science)" value={form.faculty} onChange={(e) => setForm((f) => ({ ...f, faculty: e.target.value }))} />
+          <div style={{ display: "flex", alignItems: "center", gap: ".6rem" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: ".45rem", cursor: "pointer" }}>
+              <input type="checkbox" checked={form.types.practical} onChange={(e) => setForm((f) => ({ ...f, types: { ...f.types, practical: e.target.checked } }))} /> Practical
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: ".45rem", cursor: "pointer" }}>
+              <input type="checkbox" checked={form.types.theory} onChange={(e) => setForm((f) => ({ ...f, types: { ...f.types, theory: e.target.checked } }))} /> Theory
+            </label>
+          </div>
+          <button className="btn btn-blue" onClick={prepareGroups}>{editId ? "Update Module" : "Add Module"}</button>
         </div>
+
+        {groupsVisible && (
+          <div style={{ marginTop: ".8rem" }}>
+            <div className="panel" style={{ padding: ".8rem" }}>
+              <h4 style={{ marginBottom: ".6rem" }}>Define Groups ({groups.length})</h4>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Group name</th>
+                      <th>Number of students</th>
+                      <th>Assign lecturer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groups.map((group, index) => (
+                      <tr key={group.id}>
+                        <td><input value={group.groupName} onChange={(e) => updateGroup(index, "groupName", e.target.value)} /></td>
+                        <td><input type="number" min={0} value={group.students} onChange={(e) => updateGroup(index, "students", e.target.value)} /></td>
+                        <td>
+                          <select value={group.lecturerId} onChange={(e) => updateGroup(index, "lecturerId", e.target.value)}>
+                            <option value="">Select lecturer</option>
+                            {lecturers.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                          </select>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ marginTop: ".6rem", textAlign: "right" }}>
+                <button className="btn btn-outline" onClick={() => { setGroupsVisible(false); setGroups([]); }}>{editId ? "Cancel" : "Abort"}</button>
+                <button className="btn btn-blue" style={{ marginLeft: ".6rem" }} onClick={finalizeAdd}>Add</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Table */}
       <div className="panel">
-        <h3>All Courses ({db.courses.length})</h3>
+        <h3>All Modules ({db.courses.length})</h3>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Course Name</th>
+                <th>Module Name</th>
                 <th>Lecturer</th>
-                <th>Group Size</th>
-                <th>Section</th>
-                <th>Lab Required</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {db.courses.map((c) => {
-                const lecturer = db.users.find((u) => u.id === c.lecturerId);
                 const allocCount = db.allocations.filter((a) => a.courseId === c.id).length;
+                const lecturerNames = [...new Set((c.groups || []).map((group) => group.lecturerId).filter(Boolean))]
+                  .map((id) => db.users.find((u) => u.id === id)?.name)
+                  .filter(Boolean);
+                const isSelected = selectedModule?.id === c.id;
+
                 return (
-                  <tr key={c.id}>
-                    <td><span className="badge badge-blue">{c.code}</span></td>
-                    <td>
-                      <div style={{ fontWeight: 600, fontSize: ".88rem" }}>{c.name}</div>
-                      {allocCount > 0 && <div style={{ fontSize: ".74rem", color: "var(--muted)", marginTop: ".1rem" }}>{allocCount} allocation{allocCount > 1 ? "s" : ""}</div>}
-                    </td>
-                    <td>{lecturer ? lecturer.name : <span style={{ color: "var(--muted)", fontStyle: "italic" }}>Unassigned</span>}</td>
-                    <td>{c.groupSize}</td>
-                    <td><span className="badge badge-amber">{c.section || "—"}</span></td>
-                    <td>
-                      {c.requiresLab
-                        ? <span className="badge badge-teal">✔ Lab</span>
-                        : <span className="badge" style={{ background: "#f1f5f9", color: "var(--muted)" }}>No</span>}
-                    </td>
-                    <td>
-                      <div className="btn-row">
-                        <button className="btn btn-outline btn-sm" onClick={() => startEdit(c)}>Edit</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => del(c.id)}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
+                  <Fragment key={c.id}>
+                    <tr>
+                      <td style={{ cursor: "pointer" }} onClick={() => toggleModuleDetails(c)}><span className="badge badge-blue" style={{ cursor: "pointer" }}>{c.code}</span></td>
+                      <td>
+                        <div style={{ fontWeight: 600, fontSize: ".88rem" }}>{c.name}</div>
+                        {allocCount > 0 && <div style={{ fontSize: ".74rem", color: "var(--muted)", marginTop: ".1rem" }}>{allocCount} allocation{allocCount > 1 ? "s" : ""}</div>}
+                      </td>
+                      <td>{lecturerNames.length > 0 ? lecturerNames.join(", ") : "—"}</td>
+                      <td>
+                        <div className="btn-row">
+                          <button className="btn btn-outline btn-sm" onClick={() => startEdit(c)}>Edit</button>
+                          <button className="btn btn-danger btn-sm" onClick={() => del(c.id)}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {isSelected && (
+                      <tr>
+                        <td colSpan={4} style={{ padding: 0, borderBottom: "1px solid var(--line)" }}>
+                          <div className="module-detail-shell">
+                            <div className="module-detail-top">
+                              <div>
+                                <div className="module-detail-code">Module Code</div>
+                                <div className="module-detail-code-value">{c.code}</div>
+                              </div>
+                              <button className="btn btn-outline btn-sm" onClick={() => setSelectedModule(null)}>Close</button>
+                            </div>
+
+                            <div className="module-detail-grid">
+                              <div className="module-detail-stat">
+                                <div className="module-detail-stat-label">Module Name</div>
+                                <div className="module-detail-stat-value">{c.name}</div>
+                              </div>
+                              <div className="module-detail-stat">
+                                <div className="module-detail-stat-label">Total Students</div>
+                                <div className="module-detail-stat-value">{c.groupSize}</div>
+                              </div>
+                              <div className="module-detail-stat">
+                                <div className="module-detail-stat-label">Number of Groups</div>
+                                <div className="module-detail-stat-value">{c.numGroups || (c.groups && c.groups.length) || "—"}</div>
+                              </div>
+                              <div className="module-detail-stat">
+                                <div className="module-detail-stat-label">Type</div>
+                                {c.types ? (
+                                  <span className="badge badge-teal module-detail-badge">{c.types.practical && c.types.theory ? "Practical + Theory" : c.types.practical ? "Practical" : "Theory"}</span>
+                                ) : <span className="badge" style={{ background: "#f1f5f9", color: "var(--muted)" }}>—</span>}
+                              </div>
+                            </div>
+
+                            {c.groups && c.groups.length > 0 ? (
+                              <div style={{ marginTop: ".35rem" }}>
+                                <div className="module-detail-table">
+                                  <table style={{ fontSize: ".85rem" }}>
+                                    <thead>
+                                      <tr>
+                                        <th>Group Name</th>
+                                        <th>Students</th>
+                                        <th>Assigned Lecturer</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {c.groups.map((group, index) => {
+                                        const groupLecturer = db.users.find((u) => u.id === group.lecturerId);
+                                        return (
+                                          <tr key={index}>
+                                            <td style={{ fontWeight: 600 }}>{group.groupName}</td>
+                                            <td>{group.students}</td>
+                                            <td>{groupLecturer ? groupLecturer.name : "—"}</td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="module-detail-note">No groups defined for this module yet.</p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
               {db.courses.length === 0 && (
-                <tr><td colSpan={7} style={{ color: "var(--muted)", fontStyle: "italic" }}>No courses found. Add one above.</td></tr>
+                <tr><td colSpan={4} style={{ color: "var(--muted)", fontStyle: "italic" }}>No modules found. Add one above.</td></tr>
               )}
             </tbody>
           </table>
